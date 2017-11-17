@@ -27,18 +27,18 @@ protected:
     // Magic number is in first 4 bytes of store.
     readImpl(0, (uint8_t *)&magic_value, sizeof(magic_value));
     magic_value = ntohl(magic_value);
-    LOG_DEBUG(F("Read magic number %x" CR), magic_value);
+    // LOG_DEBUG(F("Read magic number %x" CR), magic_value);
     return (magic_value==MAGIC_NUMBER);
   }
-  virtual uint8_t readbyteImpl(uint16_t offset) const = 0;
   virtual void readImpl(uint16_t offset, void *addr, uint16_t size) const =  0;
-  virtual void writebyteImpl(uint16_t offset, uint8_t value) = 0;
   virtual void writeImpl(uint16_t offset, const void *bytes, uint16_t size) = 0;
 public:
   uint16_t size() const { return _size - dataOffset; } // Returns usable size
-  uint8_t readbyte(uint16_t offset) const {
+  uint8_t readbyte(const uint16_t offset) const {
     ASSERT((dataOffset + offset)<this->_size);
-    return readbyteImpl(dataOffset + offset);
+    uint8_t byte;
+    readImpl(dataOffset + offset, &byte, sizeof(byte));
+    return byte;
   }
   uint32_t readu32(const uint16_t offset) const {
     uint32_t value = 0;
@@ -56,6 +56,9 @@ public:
     ASSERT((dataOffset + offset + size)<=this->_size);
     readImpl(dataOffset + offset, addr, size);
   }
+  void writebyte(const uint16_t offset, const uint8_t byte) {
+    writeImpl(dataOffset + offset, &byte, sizeof(byte));
+  }
   void write(const uint16_t offset, const void *addr, const uint16_t size) {
     ASSERT((dataOffset + offset + size)<=this->_size);
     writeImpl(dataOffset + offset, addr, size);
@@ -70,7 +73,7 @@ public:
     uint32_t writable = htonl(value);
     writeImpl(dataOffset + offset, (uint8_t *)&writable, sizeof(value));
   }
-  void resetStore() {
+  virtual void resetStore() {
     uint8_t zeroes[100];
     memset(zeroes, 0, sizeof(zeroes));
     for (uint16_t off = 0; off < this->_size; off += sizeof(zeroes)) {

@@ -5,27 +5,47 @@
 #include <cstdlib> // rand
 #include "ParameterStore.h"
 
+void dumpBytes(const uint8_t *buffer, const uint16_t size) {
+  for (int i=0; i<size; ++i) {
+    LOG_DEBUG(F("%02x "), buffer[i]);
+  }
+  LOG_DEBUG(F("" CR));
+}
+
 template <uint16_t Size>
 class TestStore : public NonVolatileStore {
   uint8_t _bytes[Size];
   mutable uint32_t lastOffset = 50000;
   mutable uint32_t count = 0;
+  uint32_t _failAfter = 0; // 0 means don't, otherwise don't write any more after nth byte
+  // mutable uint32_t _operationCount = 0;
+  uint32_t _byteWriteCount = 0;
 
 public:
   TestStore()
     : NonVolatileStore(Size) {
   }
 
+  void setFailAfterWritingBytes(uint32_t failAfter) {
+    _failAfter = failAfter;
+    _byteWriteCount = 0;
+  }
+
+  uint32_t getBytesWritten() {
+    return _byteWriteCount;
+  }
+
   virtual bool begin() {
     return NonVolatileStore::begin();
   }
-protected:
-  virtual uint8_t readbyteImpl(uint16_t offset) const {
-    TEST_ASSERT_TRUE_MESSAGE(offset<Size, "readbyteImpl offset should be within Size");
-    return _bytes[offset];
+
+  virtual void resetStore() {
+    NonVolatileStore::resetStore();
+    setFailAfterWritingBytes(0); // Default is no failures
   }
+protected:
   virtual void readImpl(uint16_t offset, void *buf, uint16_t size) const {
-    LOG_DEBUG(F("readImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+    // LOG_DEBUG(F("readImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
     if (offset!=lastOffset) {
       count = 0;
       lastOffset = offset;
@@ -33,20 +53,40 @@ protected:
     else {
       ++count;
     }
-    TEST_ASSERT_TRUE_MESSAGE(count<5, "Reading same offset over and over");
+    if (count>=10) {
+      LOG_DEBUG(F("Reading from same offset repeatedly: %d size %d %d times" CR), offset, size, count);
+    }
+    TEST_ASSERT_TRUE_MESSAGE(count<10, "Reading same offset over and over");
     TEST_ASSERT_TRUE_MESSAGE(offset<Size, "readImpl offset should be within Size");
     TEST_ASSERT_TRUE_MESSAGE((offset+size)<=Size, "readImpl offset+size should be within Size");
     memcpy(buf, _bytes + offset, size);
-  }
-  virtual void writebyteImpl(uint16_t offset, uint8_t value) {
-    TEST_ASSERT_TRUE_MESSAGE(offset<Size, "readImpl offset should be within Size");
-    _bytes[offset] = value;
+    // dumpBytes((uint8_t *)buf, size);
   }
   virtual void writeImpl(uint16_t offset, const void *buf, uint16_t size) {
-    LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+    // LOG_DEBUG(F("Write count %d with fail at %d" CR), _byteWriteCount, _failAfter);
     TEST_ASSERT_TRUE_MESSAGE(offset<Size, "writeImpl offset should be within Size");
     TEST_ASSERT_TRUE_MESSAGE((offset+size)<=Size, "writeImpl offset+size should be within Size");
-    memcpy(_bytes + offset, buf, size);
+    if (_failAfter) {
+      if (_byteWriteCount<_failAfter) {
+        uint16_t goodWrite = MIN(size, _failAfter - _byteWriteCount);
+        memcpy(_bytes + offset, buf, goodWrite); // Write up to the failure byte
+        if (goodWrite<size) {
+          // LOG_DEBUG(F("Abbreviated write: %d of %d at offset %d" CR), goodWrite, size, offset-sizeof(uint32_t));
+        }
+        else {
+          // LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+        }
+      }
+      else {
+        // LOG_DEBUG(F("Skipped writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+      }
+    }
+    else {
+      // LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+      memcpy(_bytes + offset, buf, size);
+    }
+    // dumpBytes((uint8_t *)buf, size);
+    _byteWriteCount += size;
   }
 };
 
@@ -138,13 +178,6 @@ class Datum {
   virtual bool check(const ParameterStore &store) const = 0;
 };
 
-void dumpBytes(const uint8_t *buffer, const uint16_t size) {
-  for (int i=0; i<size; ++i) {
-    LOG_DEBUG(F("%02x "), buffer[i]);
-  }
-  LOG_DEBUG(F("" CR));
-}
-
 class DatumBytes : public Datum {
   const uint16_t _size;
   uint8_t _bytes[200];
@@ -171,11 +204,11 @@ class DatumBytes : public Datum {
     return d;
   }
   virtual bool store(ParameterStore &store) const {
-    LOG_DEBUG(F("Storing %s with size %d" CR), _name, _size);
+    //LOG_DEBUG(F("Storing %s with size %d" CR), _name, _size);
     return PS_SUCCESS==store.set(_name, _bytes, _size);
   }
   virtual bool check(const ParameterStore &store) const {
-    LOG_DEBUG(F("Checking %s with size %d" CR), _name, _size);
+    // LOG_DEBUG(F("Checking %s with size %d" CR), _name, _size);
     uint8_t buffer[_size];
     TEST_ASSERT_TRUE_MESSAGE(_size<=sizeof(buffer), "Buffer should be big enough for size");
     int ok = store.get(_name, buffer, _size);
@@ -183,37 +216,17 @@ class DatumBytes : public Datum {
       LOG_DEBUG(F("Failed to read" CR));
       return false;
     }
-    dumpBytes(buffer, _size);
-    dumpBytes(_bytes, _size);
+    // dumpBytes(buffer, _size);
+    // dumpBytes(_bytes, _size);
     return memcmp(_bytes, buffer, _size)==0;
   }
 };
 
-class DatumWithHistory {
-  Datum *_datum;
-  Datum *_last;
-  public:
-    DatumWithHistory(Datum *datum)
-    : _datum(datum), _last(NULL) {
-    }
-    void alter() {
-      _last = _datum;
-      _datum = _datum->clone()->randomize();
-    }
-    bool store(ParameterStore &store) {
-      return _datum->store(store);
-    }
-    bool check(ParameterStore &store) {
-      return (_datum->check(store) || (_last!=NULL && _last->check(store)));
-    }
-};
-
 #define ELEMENTS(x) (sizeof(x) / sizeof((x)[0]))
 
-void test_multiple_writes(void) {
-  Datum *data[20];
-  for (int i=0; i<ELEMENTS(data); ++i) {
-    char name[20];
+void makeTestEntries(ParameterStore &paramStore, Datum **data, int countData) {
+  for (int i=0; i<countData; ++i) {
+    char name[10];
     sprintf(name, "name%03d", i);
     Datum *datum;
     switch (rand() % 3) {
@@ -221,11 +234,16 @@ void test_multiple_writes(void) {
       case 1: {datum = DatumBytes::make(name); break;}
       case 2: {datum = DatumBytes::make(name); break;}
     }
-    data[i] = datum;
     bool ok = datum->store(paramStore);
     TEST_ASSERT_TRUE_MESSAGE(ok, "Stored new value successfully");
     TEST_ASSERT_TRUE_MESSAGE(datum->check(paramStore), "Check value just stored");
+    data[i] = datum;
   }
+}
+
+void test_multiple_writes(void) {
+  Datum *data[20];
+  makeTestEntries(paramStore, data, ELEMENTS(data));
 
   for (int i=0; i<CYCLES; ++i) {
     int di = rand() % ELEMENTS(data);
@@ -239,7 +257,65 @@ void test_multiple_writes(void) {
 }
 
 void test_multiple_writes_with_error(void) {
-  TEST_FAIL_MESSAGE("Unimplemented");
+  LOG_DEBUG(F("Initializing byteStore/paramStore" CR));
+  TestStore<STORE_SIZE> byteStore;
+  ParameterStore paramStore(byteStore);
+  bool ok = paramStore.begin();
+  TEST_ASSERT_TRUE_MESSAGE(ok, "Began failStore");
+
+  Datum *data[20];
+  makeTestEntries(paramStore, data, ELEMENTS(data));
+
+  LOG_DEBUG(F("Starting test cycles" CR));
+  for (int i=0; i<CYCLES; ++i) {
+    int di = rand() % ELEMENTS(data);
+    Datum *d = data[di];
+    TEST_ASSERT_TRUE_MESSAGE(d->check(paramStore), "Check value stored last time");
+
+    // Change value....
+    Datum *last = d;
+    data[di] = d = d->clone()->randomize();
+
+    // Update datum in store. Figure out how many total bytes were written.
+    TestStore<2000> prechangeStore = byteStore;
+    ok = d->store(paramStore);
+    TEST_ASSERT_TRUE_MESSAGE(ok, "Stored new value successfully");
+    uint16_t bytesWritten = byteStore.getBytesWritten() - prechangeStore.getBytesWritten();
+    // LOG_DEBUG(F("Bytes written: %d" CR), bytesWritten);
+
+    // Repeat update with failure at every single byte written. Ensure that either old or new value is readable.
+    bool newValue = false; // Once new value is written, all subsequent writes should also write successfully.
+    for (int i = 1; i<bytesWritten; ++i) {
+      // LOG_DEBUG(F("Writing limited bytes to: %d" CR), i);
+      TestStore<2000> testStore = prechangeStore;
+
+      ParameterStore failStore(testStore);
+      ok = failStore.begin();
+      TEST_ASSERT_TRUE_MESSAGE(ok, "Began failStore");
+      testStore.setFailAfterWritingBytes(i);
+      d->store(failStore); // After i bytes, nothing more is written (simulating power failure on device)
+
+      // Power up device with same store.
+      testStore.setFailAfterWritingBytes(0); // Disable failures
+      ParameterStore recoverStore(testStore);
+      ok = recoverStore.begin();
+      TEST_ASSERT_TRUE_MESSAGE(ok, "Began recoverStore");
+
+      if (newValue) {
+        TEST_ASSERT_TRUE_MESSAGE(d->check(recoverStore), "Stored new value successfully");
+      }
+      else if (d->check(recoverStore)) {
+        // First time with new value
+        TEST_ASSERT_FALSE_MESSAGE(last->check(recoverStore), "Last value no longer accessible");
+        newValue = true;
+      }
+      else {
+        // At first, only last value is accessible...
+        TEST_ASSERT_TRUE_MESSAGE(last->check(recoverStore), "Last value accessible");
+      }
+    }
+    TEST_ASSERT_TRUE_MESSAGE(newValue, "Should have finished wih new value accessible");
+  }
 }
 
 // void test_led_state_high(void) {

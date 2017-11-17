@@ -48,5 +48,5 @@ public:
 private:
   bool recoverPlan(const struct HeaderTag &header);
   uint16_t findFreeSpace(uint16_t unitSize, uint16_t *foundSize) const;
-  uint16_t findKey(const char *key, bool checkSize, uint16_t size) const;
+  uint16_t findKey(const uint16_t start, const char *key, const bool checkSize, const uint16_t size) const;
 };
