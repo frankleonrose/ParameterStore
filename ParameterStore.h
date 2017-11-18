@@ -22,9 +22,9 @@
 #endif
 
 #include "NonVolatileStore.h"
-#include "AdafruitBLEStore.h"
-#include "AdafruitFramI2CStore.h"
-#include "AdafruitFramSPIStore.h"
+// #include "AdafruitBLEStore.h"
+// #include "AdafruitFramI2CStore.h"
+// #include "AdafruitFramSPIStore.h"
 
 #define PS_INSUFFICIENT_SPACE -2
 #define PS_ERROR_NOT_FOUND -1
