@@ -1,3 +1,5 @@
+#include "Arduino.h"
+
 #if !defined(ASSERT)
 #define ASSERT(x)
 #endif
