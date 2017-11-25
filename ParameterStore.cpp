@@ -140,7 +140,7 @@ typedef struct EntryTag {
   }
   static bool readAndCheckCrc(uint32_t matchCrc, NonVolatileStore &store, const uint16_t offset, const uint16_t size, char *key) {
     uint8_t buffer[200];
-    u_int16_t dataSize = sizeof(EntryTag) + unitSize(size);
+    uint16_t dataSize = sizeof(EntryTag) + unitSize(size);
     ASSERT(dataSize<=sizeof(buffer));
     store.read(offset, buffer, dataSize);
     EntryTag entry; // Used for sizing.
