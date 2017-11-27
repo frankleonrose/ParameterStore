@@ -43,7 +43,7 @@ class NonVolatileStore {
 public:
   virtual bool begin() {
     if (!isMagicSet()) {
-      LOG_INFO(F("Did not find magic number! Clearing storage." CR));
+      PS_LOG_INFO(F("Did not find magic number! Clearing storage." CR));
       resetStore();
     }
     return true;
@@ -59,7 +59,7 @@ protected:
     // Magic number is in first 4 bytes of store.
     readImpl(0, (uint8_t *)&magic_value, sizeof(magic_value));
     magic_value = ntohl(magic_value);
-    // LOG_DEBUG(F("Read magic number %x" CR), magic_value);
+    // PS_LOG_DEBUG(F("Read magic number %x" CR), magic_value);
     return (magic_value==MAGIC_NUMBER);
   }
   virtual void readImpl(uint16_t offset, void *addr, uint16_t size) const =  0;

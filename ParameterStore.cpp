@@ -153,7 +153,7 @@ typedef struct EntryTag {
     EntryTag entry(size);
     ASSERT(entry._status._flag==FlagFree);
     // Write five bytes size+transaction plus initial name byte '\0' indicating free
-    // LOG_DEBUG(F("Writing free to %d with size %d" CR), offset, size);
+    // PS_LOG_DEBUG(F("Writing free to %d with size %d" CR), offset, size);
     store.write(offset, &entry, sizeof(entry._size) + sizeof(entry._status));
   }
   void write(NonVolatileStore &store, const uint16_t offset, const uint8_t *buffer, const uint32_t crc) {
@@ -176,7 +176,7 @@ bool ParameterStore::begin() {
   ASSERT(sizeof(Header)<_size);
   bool ok = _store.begin();
   if (!ok) {
-    LOG_ERROR(F("Underlying store failed begin()" CR));
+    PS_LOG_ERROR(F("Underlying store failed begin()" CR));
     return false;
   }
   Header header;
@@ -184,20 +184,20 @@ bool ParameterStore::begin() {
   uint16_t format = ntohs(header.format);
   if (format==0) {
     // Store was just reset...start from scratch
-    LOG_DEBUG(F("Initializing store with format %d and size %d" CR), FORMAT, _size);
+    PS_LOG_DEBUG(F("Initializing store with format %d and size %d" CR), FORMAT, _size);
     _store.writeu16(OFFSET(header, size), _size);
     Entry::writeFree(_store, sizeof(Header), _size - sizeof(Header));
     // Write format last...if it succeeds, we have valid header
     _store.writeu16(OFFSET(header, format), FORMAT);
   }
   else if (format!=FORMAT) {
-    LOG_ERROR(F("Unrecognized store format: %d (0x%x)" CR), format, format);
+    PS_LOG_ERROR(F("Unrecognized store format: %d (0x%x)" CR), format, format);
     return false;
   }
   else {
     uint16_t size = ntohs(header.size);
     if (size!=_size) {
-      LOG_ERROR(F("Unknown size requested %d vs store %d" CR), size, _size);
+      PS_LOG_ERROR(F("Unknown size requested %d vs store %d" CR), size, _size);
       return false;
     }
   }
@@ -205,17 +205,17 @@ bool ParameterStore::begin() {
 }
 
 bool ParameterStore::recoverPlan(const Header &header) {
-  // LOG_DEBUG(F("Header plan flag %d" CR), header.plan.flag);
+  // PS_LOG_DEBUG(F("Header plan flag %d" CR), header.plan.flag);
 
   // If plan invalid or marked used, ignore it.
   if (header.plan.isEmpty()) {
-    // LOG_DEBUG(F("No recovery necessary" CR));
+    // PS_LOG_DEBUG(F("No recovery necessary" CR));
     return true;
   }
 
   // We need to do some work because the last operation was interrupted and left the plan in place
   if (header.plan.flag==FlagSet) {
-    // LOG_DEBUG(F("Recovering from interrupted set" CR));
+    // PS_LOG_DEBUG(F("Recovering from interrupted set" CR));
     // We were trying to write. Make sure that the write was completed successfully.
     char key[KEYSIZE];
     if (Entry::readAndCheckCrc(header.plan.getEntryCrc(), _store, header.plan.getOffset(), header.plan.getSize(), key)) {
@@ -239,7 +239,7 @@ bool ParameterStore::recoverPlan(const Header &header) {
     _store.writebyte(OFFSET(header, plan.flag), FlagFree);
   }
   else {
-    LOG_ERROR(F("Recovery unimplemented" CR));
+    PS_LOG_ERROR(F("Recovery unimplemented" CR));
     return false;
   }
   return true;
@@ -264,14 +264,14 @@ uint16_t ParameterStore::findFreeSpace(uint16_t neededSize, uint16_t *foundSize 
       offset += entry.totalBytes();
     }
   }
-  // LOG_DEBUG(F("Free space search for %d responds %d (of %d)" CR), neededSize, offset, _size);
+  // PS_LOG_DEBUG(F("Free space search for %d responds %d (of %d)" CR), neededSize, offset, _size);
   return offset; // Will be == _size when not found
 }
 
 uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bool checkSize, const uint16_t pSize) const {
   char match[KEYSIZE];
   strncpy(match, key, sizeof(match));
-  // LOG_DEBUG(F("Looking for key %s %s size %d" CR), key, (checkSize ? "checking" : "not checking"), pSize);
+  // PS_LOG_DEBUG(F("Looking for key %s %s size %d" CR), key, (checkSize ? "checking" : "not checking"), pSize);
 
   uint16_t offset = sizeof(Header);
   // Walk through entries looking for matching key...
@@ -279,7 +279,7 @@ uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bo
     Entry entry;
     _store.read(offset, &entry, sizeof(entry));
     const uint16_t size = entry.getSize();
-    //LOG_DEBUG(F("Read entry at %d size %d key '%s'" CR), offset, size, entry._name);
+    //PS_LOG_DEBUG(F("Read entry at %d size %d key '%s'" CR), offset, size, entry._name);
     if (offset>=start && !entry.isFree() && 0==memcmp(entry._name, match, sizeof(match))) {
       if (checkSize && size!=pSize) {
         offset = _size; // Indicate not found
@@ -290,7 +290,7 @@ uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bo
       offset += entry.totalBytes();
     }
   }
-  //LOG_DEBUG(F("Key search for '%s' responds %d (of %d)" CR), key, offset, _size);
+  //PS_LOG_DEBUG(F("Key search for '%s' responds %d (of %d)" CR), key, offset, _size);
   return offset;
 }
 
@@ -332,7 +332,7 @@ int ParameterStore::set(const char *key, const uint8_t *buffer, const uint16_t s
   _store.writebyte(OFFSET(header, plan), header.plan.flag);
 
   // Write length, key, buffer, and CRC
-  // LOG_DEBUG(F("Set entry for %s responds %d for %d" CR), key, offset, size);
+  // PS_LOG_DEBUG(F("Set entry for %s responds %d for %d" CR), key, offset, size);
   entry.write(_store, offset, buffer, crc);
 
   // Remove prior value
