@@ -39,6 +39,7 @@ env:
     - PLATFORMIO_CI_SRC=./ParameterStore.cpp
 
 install:
+    - pip install -U backports.functools_lru_cache
     - pip install -U platformio
 
 script:
