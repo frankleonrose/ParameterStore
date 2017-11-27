@@ -1,3 +1,6 @@
+#ifndef ARDUINO_H
+#define ARDUINO_H
+
 // Mock Arduino.h used when compiling native platform tests.
 
 #include <cstdint>
@@ -24,3 +27,5 @@ void delay(uint16_t msec);
 void pinMode(uint8_t pin, uint8_t mode);
 void digitalWrite(uint8_t pin, uint8_t val);
 int digitalRead(uint8_t pin);
+
+#endif

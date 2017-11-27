@@ -1,3 +1,6 @@
+#ifndef PARAMETERSTORE_H
+#define PARAMETERSTORE_H
+
 #include "Arduino.h"
 
 #if defined(PS_LOGGING_OVERRIDE)
@@ -61,3 +64,5 @@ private:
   uint16_t findFreeSpace(uint16_t unitSize, uint16_t *foundSize) const;
   uint16_t findKey(const uint16_t start, const char *key, const bool checkSize, const uint16_t size) const;
 };
+
+#endif

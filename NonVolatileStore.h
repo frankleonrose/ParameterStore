@@ -1,5 +1,7 @@
+#ifndef NONVOLATILESTORE_H
+#define NONVOLATILESTORE_H
+
 #include "Arduino.h"
-// #include "Logging.h"
 
 #if !defined(MIN)
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -115,3 +117,5 @@ public:
     writeImpl(0, &magic, sizeof(magic)); // Need to use writeImpl to write at actual 0 offset
   }
 };
+
+#endif
