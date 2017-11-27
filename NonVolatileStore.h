@@ -6,19 +6,35 @@
 #endif
 
 #if BYTE_ORDER == BIG_ENDIAN
+#if !defined(htons)
 #define htons(x) (x)
+#endif
+#if !defined(ntohs)
 #define ntohs(x) (x)
+#endif
+#if !defined(htonl)
 #define htonl(x) (x)
+#endif
+#if !defined(ntohl)
 #define ntohl(x) (x)
+#endif
 #else
+#if !defined(htons)
 #define htons(x) ( ((x)<< 8 & 0xFF00) + \
                    ((x)>> 8 & 0x00FF) )
+#endif
+#if !defined(ntohs)
 #define ntohs(x) htons(x)
+#endif
+#if !defined(htonl)
 #define htonl(x) ( ((x)<<24 & 0xFF000000UL) + \
                    ((x)<< 8 & 0x00FF0000UL) + \
                    ((x)>> 8 & 0x0000FF00UL) + \
                    ((x)>>24 & 0x000000FFUL) )
+#endif
+#if !defined(ntohl)
 #define ntohl(x) htonl(x)
+#endif
 #endif
 
 class NonVolatileStore {
