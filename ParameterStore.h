@@ -30,36 +30,17 @@
   #define PS_LOG_DEBUG(...)
 #endif
 
-#if defined(PLATFORM_NATIVE)
-#include <cstdint>
-#include <cstring>  // memset
-#include <string.h> // memcpy
-#include <cstdio>  // memset
-
-// Stub Arduino string in program text macro
-#define F(s) (s)
-#define CR "\r\n"
-
-// Log.Info(__VA_ARGS__)
-#define LOG_INFO(...)   printf(__VA_ARGS__)
-// Log.Error(__VA_ARGS__)
-#define LOG_ERROR(...)  printf(__VA_ARGS__)
-// Log.Debug(__VA_ARGS__)
-#define LOG_DEBUG(...)  printf(__VA_ARGS__)
-// #include <cstdlib>
 #if !defined(ASSERT)
 #define ASSERT(x) if (!(x)) { PS_LOG_ERROR("Assertion failure: " #x ); }
 #endif
 
-#include "NonVolatileStore.h"
-// #include "AdafruitBLEStore.h"
-// #include "AdafruitFramI2CStore.h"
-// #include "AdafruitFramSPIStore.h"
+#define CR "\r\n"
 
 #define PS_INSUFFICIENT_SPACE -2
 #define PS_ERROR_NOT_FOUND -1
 #define PS_SUCCESS 0
 
+#include "NonVolatileStore.h"
 struct HeaderTag;
 
 class ParameterStore {

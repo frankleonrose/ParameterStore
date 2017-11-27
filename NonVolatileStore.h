@@ -109,7 +109,7 @@ public:
     uint8_t zeroes[100];
     memset(zeroes, 0, sizeof(zeroes));
     for (uint16_t off = 0; off < this->_size; off += sizeof(zeroes)) {
-      writeImpl(off, zeroes, MIN(sizeof(zeroes), (this->_size - off)));
+      writeImpl(off, zeroes, MIN(sizeof(zeroes), (unsigned)(this->_size - off)));
     }
     uint32_t magic = htonl(MAGIC_NUMBER);
     writeImpl(0, &magic, sizeof(magic)); // Need to use writeImpl to write at actual 0 offset
