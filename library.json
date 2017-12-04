@@ -1,0 +1,28 @@
+{
+  "name": "ParameterStore",
+  "keywords": "nvram, fram, storage",
+  "description": "Arduino Library for storing named values in non-volatile storage",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/frankleonrose/ParameterStore.git"
+  },
+  "authors":
+  [
+    {
+      "name": "Frank Leon Rose",
+      "email": "frankleonrose@gmail.com",
+      "maintainer": true
+    }
+  ],
+  "dependencies":
+  [
+    {
+      "name": "Arduino Logging Library",
+      "version": "https://github.com/frankleonrose/Arduino-logging-library"
+    }
+  ],
+  "version": "0.1.0",
+  "frameworks": "arduino",
+  "platforms": "*"
+}

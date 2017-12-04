@@ -1,8 +1,42 @@
-// #include "Logging.h"
-#include <arpa/inet.h>
+#ifndef NONVOLATILESTORE_H
+#define NONVOLATILESTORE_H
+
+#include "Arduino.h"
 
 #if !defined(MIN)
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
+
+#if BYTE_ORDER == BIG_ENDIAN
+#if !defined(htons)
+#define htons(x) (x)
+#endif
+#if !defined(ntohs)
+#define ntohs(x) (x)
+#endif
+#if !defined(htonl)
+#define htonl(x) (x)
+#endif
+#if !defined(ntohl)
+#define ntohl(x) (x)
+#endif
+#else
+#if !defined(htons)
+#define htons(x) ( ((x)<< 8 & 0xFF00) + \
+                   ((x)>> 8 & 0x00FF) )
+#endif
+#if !defined(ntohs)
+#define ntohs(x) htons(x)
+#endif
+#if !defined(htonl)
+#define htonl(x) ( ((x)<<24 & 0xFF000000UL) + \
+                   ((x)<< 8 & 0x00FF0000UL) + \
+                   ((x)>> 8 & 0x0000FF00UL) + \
+                   ((x)>>24 & 0x000000FFUL) )
+#endif
+#if !defined(ntohl)
+#define ntohl(x) htonl(x)
+#endif
 #endif
 
 class NonVolatileStore {
@@ -11,7 +45,7 @@ class NonVolatileStore {
 public:
   virtual bool begin() {
     if (!isMagicSet()) {
-      LOG_INFO(F("Did not find magic number! Clearing storage." CR));
+      PS_LOG_INFO(F("Did not find magic number! Clearing storage." CR));
       resetStore();
     }
     return true;
@@ -27,7 +61,7 @@ protected:
     // Magic number is in first 4 bytes of store.
     readImpl(0, (uint8_t *)&magic_value, sizeof(magic_value));
     magic_value = ntohl(magic_value);
-    // LOG_DEBUG(F("Read magic number %x" CR), magic_value);
+    // PS_LOG_DEBUG(F("Read magic number %x" CR), magic_value);
     return (magic_value==MAGIC_NUMBER);
   }
   virtual void readImpl(uint16_t offset, void *addr, uint16_t size) const =  0;
@@ -77,9 +111,11 @@ public:
     uint8_t zeroes[100];
     memset(zeroes, 0, sizeof(zeroes));
     for (uint16_t off = 0; off < this->_size; off += sizeof(zeroes)) {
-      writeImpl(off, zeroes, MIN(sizeof(zeroes), (this->_size - off)));
+      writeImpl(off, zeroes, MIN(sizeof(zeroes), (unsigned)(this->_size - off)));
     }
     uint32_t magic = htonl(MAGIC_NUMBER);
     writeImpl(0, &magic, sizeof(magic)); // Need to use writeImpl to write at actual 0 offset
   }
 };
+
+#endif
