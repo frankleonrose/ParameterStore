@@ -349,7 +349,8 @@ int ParameterStore::set(const char *key, const char *str) {
   return PS_SUCCESS;
 }
 int ParameterStore::set(const char *key, const uint32_t value) {
-  return PS_SUCCESS;
+  uint32_t storeValue = htonl(value);
+  return set(key, (const uint8_t *)&storeValue, sizeof(storeValue));
 }
 int ParameterStore::get(const char *key, uint8_t *buffer, const uint16_t size) const {
   uint16_t offset = findKey(0, key, true, size);
@@ -364,5 +365,10 @@ int ParameterStore::get(const char *key, char *str, uint16_t size) const {
   return PS_SUCCESS;
 }
 int ParameterStore::get(const char *key, uint32_t *value) const {
-  return PS_SUCCESS;
+  uint32_t storeValue = 0;
+  int ret = get(key, (uint8_t *)&storeValue, sizeof(storeValue));
+  if (ret==PS_SUCCESS) {
+    *value = ntohl(storeValue);
+  }
+  return ret;
 }

@@ -222,6 +222,40 @@ class DatumBytes : public Datum {
   }
 };
 
+class DatumInt : public Datum {
+  uint32_t _value;
+  public:
+  DatumInt(const char *name, const uint32_t value)
+  : Datum(name), _value(value) {
+  }
+  virtual Datum *clone() const {
+    return new DatumInt(_name, _value);
+  }
+  virtual Datum *randomize() {
+    _value = rand();
+    return this;
+  }
+  static DatumInt *make(const char *name) {
+    DatumInt *d = new DatumInt(name, 0);
+    d->randomize();
+    return d;
+  }
+  virtual bool store(ParameterStore &store) const {
+    //PS_LOG_DEBUG(F("Storing %s with size %d" CR), _name, _size);
+    return PS_SUCCESS==store.set(_name, _value);
+  }
+  virtual bool check(const ParameterStore &store) const {
+    // PS_LOG_DEBUG(F("Checking %s with size %d" CR), _name, _size);
+    uint32_t value = 0;
+    int ok = store.get(_name, &value);
+    if (PS_SUCCESS!=ok) {
+      PS_LOG_DEBUG(F("Failed to read" CR));
+      return false;
+    }
+    return _value==value;
+  }
+};
+
 #define ELEMENTS(x) (sizeof(x) / sizeof((x)[0]))
 
 void makeTestEntries(ParameterStore &paramStore, Datum **data, int countData) {
@@ -231,7 +265,7 @@ void makeTestEntries(ParameterStore &paramStore, Datum **data, int countData) {
     Datum *datum;
     switch (rand() % 3) {
       case 0: {datum = DatumBytes::make(name); break;}
-      case 1: {datum = DatumBytes::make(name); break;}
+      case 1: {datum = DatumInt::make(name); break;}
       case 2: {datum = DatumBytes::make(name); break;}
     }
     bool ok = datum->store(paramStore);
