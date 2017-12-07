@@ -141,7 +141,7 @@ typedef struct EntryTag {
   static bool readAndCheckCrc(uint32_t matchCrc, NonVolatileStore &store, const uint16_t offset, const uint16_t size, char *key) {
     uint8_t buffer[200];
     uint16_t dataSize = sizeof(EntryTag) + unitSize(size);
-    ASSERT(dataSize<=sizeof(buffer));
+    PS_ASSERT(dataSize<=sizeof(buffer));
     store.read(offset, buffer, dataSize);
     EntryTag entry; // Used for sizing.
     strncpy(key, (char *)(buffer + sizeof(entry._size) + sizeof(entry._status)), KEYSIZE);
@@ -151,7 +151,7 @@ typedef struct EntryTag {
   }
   static void writeFree(NonVolatileStore &store, const uint16_t offset, const uint16_t size) {
     EntryTag entry(size);
-    ASSERT(entry._status._flag==FlagFree);
+    PS_ASSERT(entry._status._flag==FlagFree);
     // Write five bytes size+transaction plus initial name byte '\0' indicating free
     // PS_LOG_DEBUG(F("Writing free to %d with size %d" CR), offset, size);
     store.write(offset, &entry, sizeof(entry._size) + sizeof(entry._status));
@@ -173,7 +173,7 @@ ParameterStore::ParameterStore(NonVolatileStore &store)
 }
 
 bool ParameterStore::begin() {
-  ASSERT(sizeof(Header)<_size);
+  PS_ASSERT(sizeof(Header)<_size);
   bool ok = _store.begin();
   if (!ok) {
     PS_LOG_ERROR(F("Underlying store failed begin()" CR));

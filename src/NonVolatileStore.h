@@ -69,41 +69,41 @@ protected:
 public:
   uint16_t size() const { return _size - dataOffset; } // Returns usable size
   uint8_t readbyte(const uint16_t offset) const {
-    ASSERT((dataOffset + offset)<this->_size);
+    PS_ASSERT((dataOffset + offset)<this->_size);
     uint8_t byte;
     readImpl(dataOffset + offset, &byte, sizeof(byte));
     return byte;
   }
   uint32_t readu32(const uint16_t offset) const {
     uint32_t value = 0;
-    ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
+    PS_ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
     readImpl(dataOffset + offset, (uint8_t *)&value, sizeof(value));
     return ntohl(value);
   }
   uint16_t readu16(const uint16_t offset) const {
     uint16_t value = 0;
-    ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
+    PS_ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
     readImpl(dataOffset + offset, (uint8_t *)&value, sizeof(value));
     return ntohs(value);
   }
   void read(const uint16_t offset, void *addr, const uint16_t size) const {
-    ASSERT((dataOffset + offset + size)<=this->_size);
+    PS_ASSERT((dataOffset + offset + size)<=this->_size);
     readImpl(dataOffset + offset, addr, size);
   }
   void writebyte(const uint16_t offset, const uint8_t byte) {
     writeImpl(dataOffset + offset, &byte, sizeof(byte));
   }
   void write(const uint16_t offset, const void *addr, const uint16_t size) {
-    ASSERT((dataOffset + offset + size)<=this->_size);
+    PS_ASSERT((dataOffset + offset + size)<=this->_size);
     writeImpl(dataOffset + offset, addr, size);
   }
   void writeu16(const uint16_t offset, const uint16_t value) {
-    ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
+    PS_ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
     uint16_t writable = htons(value);
     writeImpl(dataOffset + offset, (uint8_t *)&writable, sizeof(value));
   }
   void writeu32(const uint16_t offset, const uint32_t value) {
-    ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
+    PS_ASSERT((dataOffset + offset + sizeof(value))<=this->_size);
     uint32_t writable = htonl(value);
     writeImpl(dataOffset + offset, (uint8_t *)&writable, sizeof(value));
   }

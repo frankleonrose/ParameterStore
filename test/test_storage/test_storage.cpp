@@ -184,7 +184,7 @@ class DatumBytes : public Datum {
   public:
   DatumBytes(const char *name, const uint8_t *bytes, const uint16_t size)
   : Datum(name), _size(size) {
-    ASSERT(size <= sizeof(_bytes));
+    PS_ASSERT(size <= sizeof(_bytes));
     memcpy(_bytes, bytes, size);
   }
   virtual Datum *clone() const {

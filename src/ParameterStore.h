@@ -33,8 +33,8 @@
   #define PS_LOG_DEBUG(...)
 #endif
 
-#if !defined(ASSERT)
-#define ASSERT(x) if (!(x)) { PS_LOG_ERROR("Assertion failure: " #x ); }
+#if !defined(PS_ASSERT)
+#define PS_ASSERT(x) if (!(x)) { PS_LOG_ERROR("Assertion failure: " #x ); }
 #endif
 
 #define CR "\r\n"
