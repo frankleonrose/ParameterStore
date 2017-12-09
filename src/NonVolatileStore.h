@@ -7,7 +7,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #endif
 
-#if BYTE_ORDER == BIG_ENDIAN
+#if !(defined(__IEEE_LITTLE_ENDIAN) || defined(__IEEE_BYTES_LITTLE_ENDIAN))
 #if !defined(htons)
 #define htons(x) (x)
 #endif
