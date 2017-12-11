@@ -19,7 +19,8 @@
   [
     {
       "name": "Arduino Logging Library",
-      "version": "https://github.com/frankleonrose/Arduino-logging-library"
+      "version": "https://github.com/frankleonrose/Arduino-logging-library.git",
+      "authors": ["Bernd Klein <berndklein@gmx.de>", "Frank Leon Rose <frankleonrose@gmail.com>"]
     }
   ],
   "export": {
