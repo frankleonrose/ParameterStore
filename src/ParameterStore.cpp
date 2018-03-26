@@ -297,6 +297,7 @@ uint16_t ParameterStore::findFreeSpace(uint16_t neededSize, uint16_t *foundSize 
 
 uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bool checkSize, const uint16_t pSize) const {
   char match[KEYSIZE];
+  memset(match, 0, sizeof(match));
   strncpy(match, key, sizeof(match));
   // PS_LOG_DEBUG(F("Looking for key %s %s size %d" CR), key, (checkSize ? "checking" : "not checking"), pSize);
 

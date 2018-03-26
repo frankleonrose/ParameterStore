@@ -273,7 +273,7 @@ class DatumInt : public Datum {
     return _value==value;
   }
   virtual void dump() const {
-    PS_LOG_DEBUG(F("Name: '%s' Value: '0x%x' (%d)" CR), _name, _value, _value);
+    PS_LOG_DEBUG(F("Name: '%s' Value: '0x%X' (%d)" CR), _name, _value, _value);
   }
 };
 
