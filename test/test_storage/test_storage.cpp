@@ -4,6 +4,7 @@
 
 #include <cstdlib> // rand
 #include "src/ParameterStore.h"
+extern char hexDigit(uint8_t b);
 
 void dumpBytes(const uint8_t *buffer, const uint16_t size) {
   for (int i=0; i<size; ++i) {
@@ -83,9 +84,9 @@ protected:
     }
     else {
       // PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+      // dumpBytes((uint8_t *)buf, size);
       memcpy(_bytes + offset, buf, size);
     }
-    // dumpBytes((uint8_t *)buf, size);
     _byteWriteCount += size;
   }
 };
@@ -167,6 +168,7 @@ class Datum {
   protected:
   char _name[8];
   Datum(const char *name) {
+    memset(_name, 0, sizeof(_name));
     strncpy(_name, name, sizeof(_name));
   }
 
@@ -177,6 +179,7 @@ class Datum {
   virtual Datum *randomize() = 0;
   virtual bool store(ParameterStore &store) const = 0;
   virtual bool check(const ParameterStore &store) const = 0;
+  virtual void dump() const = 0;
 };
 
 class DatumBytes : public Datum {
@@ -198,8 +201,8 @@ class DatumBytes : public Datum {
     return this;
   }
   static DatumBytes *make(const char *name) {
-    uint8_t bytes[200];
     const uint16_t size = 1 + rand() % 16;
+    uint8_t bytes[size]; // Dummy input. Will be overwritten by randomize.
     DatumBytes *d = new DatumBytes(name, bytes, size);
     d->randomize();
     return d;
@@ -211,15 +214,21 @@ class DatumBytes : public Datum {
   virtual bool check(const ParameterStore &store) const {
     // PS_LOG_DEBUG(F("Checking %s with size %d" CR), _name, _size);
     uint8_t buffer[_size];
-    TEST_ASSERT_TRUE_MESSAGE(_size<=sizeof(buffer), "Buffer should be big enough for size");
     int ok = store.get(_name, buffer, _size);
     if (PS_SUCCESS!=ok) {
-      PS_LOG_DEBUG(F("Failed to read" CR));
+      PS_LOG_DEBUG(F("Failed to read bytes '%s' %d" CR), _name, _size);
       return false;
     }
-    // dumpBytes(buffer, _size);
-    // dumpBytes(_bytes, _size);
+    // if (memcmp(_bytes, buffer, _size)!=0) {
+    //   PS_LOG_DEBUG(F("Bytes different for %s [%d]" CR), _name, _size);
+    //   dumpBytes(buffer, _size);
+    //   dumpBytes(_bytes, _size);
+    // }
     return memcmp(_bytes, buffer, _size)==0;
+  }
+  virtual void dump() const {
+    PS_LOG_DEBUG(F("Name: '%s' Value:"), _name);
+    dumpBytes(_bytes, _size);
   }
 };
 
@@ -250,10 +259,16 @@ class DatumInt : public Datum {
     uint32_t value = 0;
     int ok = store.get(_name, &value);
     if (PS_SUCCESS!=ok) {
-      PS_LOG_DEBUG(F("Failed to read" CR));
+      PS_LOG_DEBUG(F("Failed to read int '%s' %d" CR), _name, (int)sizeof(value));
       return false;
     }
+    // if (_value!=value) {
+    //   PS_LOG_DEBUG(F("Different values: 0x%X 0x%X" CR), _value, value);
+    // }
     return _value==value;
+  }
+  virtual void dump() const {
+    PS_LOG_DEBUG(F("Name: '%s' Value: '0x%X' (%d)" CR), _name, _value, _value);
   }
 };
 
@@ -301,7 +316,7 @@ void test_multiple_writes_with_error(void) {
   Datum *data[20];
   makeTestEntries(paramStore, data, ELEMENTS(data));
 
-  PS_LOG_DEBUG(F("Starting test cycles" CR));
+  // PS_LOG_DEBUG(F("Starting test cycles" CR));
   for (int i=0; i<CYCLES; ++i) {
     int di = rand() % ELEMENTS(data);
     Datum *d = data[di];
@@ -362,6 +377,7 @@ void test_serialize_deserialize(void) {
     Datum *d = data[di];
     TEST_ASSERT_TRUE_MESSAGE(d->check(paramStore), "Check value stored last time");
     d->randomize();
+    // d->dump();
     bool ok = d->store(paramStore);
     TEST_ASSERT_TRUE_MESSAGE(ok, "Stored new value successfully");
 
@@ -375,11 +391,10 @@ void test_serialize_deserialize(void) {
 
     paramStore.deserialize(buffer, size);
     for (di = 0; di<ELEMENTS(data); ++di) {
-      TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
       if (!data[di]->check(paramStore)) {
+        // Show more before failing
         PS_LOG_DEBUG(F("Serialized: %s" CR), buffer);
-        PS_LOG_DEBUG(F("Failing name: %s" CR), data[di]->name());
-
+        data[di]->dump();
         TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
       }
     }

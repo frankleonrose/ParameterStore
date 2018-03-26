@@ -139,7 +139,6 @@ typedef struct EntryTag {
   EntryTag(uint16_t size, const char *key) {
     _size = htons(size);
     _status._transaction = htons(0);
-    // _status._flag = FlagSet;
     memset(_name, 0, sizeof(_name)); // Pads with 0's to width
     strncpy(_name, key, sizeof(_name));
   }
@@ -297,6 +296,7 @@ uint16_t ParameterStore::findFreeSpace(uint16_t neededSize, uint16_t *foundSize 
 
 uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bool checkSize, const uint16_t pSize) const {
   char match[KEYSIZE];
+  memset(match, 0, sizeof(match));
   strncpy(match, key, sizeof(match));
   // PS_LOG_DEBUG(F("Looking for key %s %s size %d" CR), key, (checkSize ? "checking" : "not checking"), pSize);
 
@@ -306,7 +306,9 @@ uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bo
     Entry entry;
     _store.read(offset, &entry, sizeof(entry));
     const uint16_t size = entry.getSize();
-    //PS_LOG_DEBUG(F("Read entry at %d size %d key '%s'" CR), offset, size, entry._name);
+    // if (0==memcmp(entry._name, match, sizeof(match))) {
+    //   PS_LOG_DEBUG(F("Found named entry at %d size: %d key: '%s' isFree: %d match: %d start: %d" CR), offset, size, entry._name, (int)entry.isFree(), memcmp(entry._name, match, sizeof(match)), start);
+    // }
     if (offset>=start && !entry.isFree() && 0==memcmp(entry._name, match, sizeof(match))) {
       if (checkSize && size!=pSize) {
         offset = _size; // Indicate not found
@@ -389,7 +391,8 @@ int ParameterStore::get(const char *key, uint8_t *buffer, const uint16_t size) c
   return PS_SUCCESS;
 }
 int ParameterStore::get(const char *key, char *str, uint16_t size) const {
-  return PS_SUCCESS;
+  PS_LOG_ERROR(F("Calling unimplemented ParameterStore::get with '%s' %d" CR), key, size);
+  return PS_ERROR_NOT_FOUND;
 }
 int ParameterStore::get(const char *key, uint32_t *value) const {
   uint32_t storeValue = 0;
@@ -409,7 +412,7 @@ int ParameterStore::serialize(char *buffer, const size_t size) const {
     //PS_LOG_DEBUG(F("Read entry at %d size %d key '%s'" CR), offset, size, entry._name);
     if (!entry.isFree()) {
       // Write entry key=value where key is ASCII and value is a string of hex digits.
-      for (char *nm = entry._name; *nm!='\0'; ++nm) {
+      for (char *nm = entry._name; *nm!='\0' && (nm - entry._name)<8; ++nm) {
         buffer[fill++] = *nm;
         if (fill==size) {
           return -1;
@@ -458,8 +461,9 @@ bool ParameterStore::deserializeLine(const char *buffer, const char *eol) {
     return false;
   }
   char key[8+1];
-  strncpy(key, buffer, (eq-buffer));
-  key[eq-buffer+1] = '\0';
+  size_t nlen = eq-buffer;
+  strncpy(key, buffer, nlen);
+  key[nlen] = '\0';
 
   buffer = eq + 1;
   size_t digits = (eol - buffer);
