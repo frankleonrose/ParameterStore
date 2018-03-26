@@ -36,6 +36,9 @@
 #if !defined(PS_ASSERT)
 #define PS_ASSERT(x) if (!(x)) { PS_LOG_ERROR("Assertion failure: " #x ); }
 #endif
+#if !defined(PS_ASSERT_MSG)
+#define PS_ASSERT_MSG(x, msg) if (!(x)) { PS_LOG_ERROR("Assertion failure: " #x "[" msg "]"); }
+#endif
 
 #define CR "\r\n"
 
