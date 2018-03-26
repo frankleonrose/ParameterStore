@@ -4,6 +4,7 @@
 
 #include <cstdlib> // rand
 #include "src/ParameterStore.h"
+extern char hexDigit(uint8_t b);
 
 void dumpBytes(const uint8_t *buffer, const uint16_t size) {
   for (int i=0; i<size; ++i) {
@@ -199,8 +200,8 @@ class DatumBytes : public Datum {
     return this;
   }
   static DatumBytes *make(const char *name) {
-    uint8_t bytes[200];
     const uint16_t size = 1 + rand() % 16;
+    uint8_t bytes[size]; // Dummy input. Will be overwritten by randomize.
     DatumBytes *d = new DatumBytes(name, bytes, size);
     d->randomize();
     return d;
@@ -223,7 +224,14 @@ class DatumBytes : public Datum {
     return memcmp(_bytes, buffer, _size)==0;
   }
   virtual void dump() const {
-    PS_LOG_DEBUG(F("Name: %s Value: %*m" CR), _name, _size, _bytes);
+    char bytes[2 * _size + 1];
+    char *w = bytes;
+    for (size_t i=0; i<_size; ++i) {
+      *(w++) = hexDigit(_bytes[i] >> 4);
+      *(w++) = hexDigit(_bytes[i]);
+    }
+    bytes[2*_size] = '\0';
+    PS_LOG_DEBUG(F("Name: '%s' Value: '%s'" CR), _name, bytes);
   }
 };
 
@@ -260,7 +268,7 @@ class DatumInt : public Datum {
     return _value==value;
   }
   virtual void dump() const {
-    PS_LOG_DEBUG(F("Name: %s Value: %x" CR), _name, _value);
+    PS_LOG_DEBUG(F("Name: '%s' Value: '0x%x' (%d)" CR), _name, _value, _value);
   }
 };
 
@@ -369,6 +377,7 @@ void test_serialize_deserialize(void) {
     Datum *d = data[di];
     TEST_ASSERT_TRUE_MESSAGE(d->check(paramStore), "Check value stored last time");
     d->randomize();
+    d->dump();
     bool ok = d->store(paramStore);
     TEST_ASSERT_TRUE_MESSAGE(ok, "Stored new value successfully");
 
