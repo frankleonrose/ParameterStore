@@ -308,7 +308,7 @@ uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bo
     _store.read(offset, &entry, sizeof(entry));
     const uint16_t size = entry.getSize();
     if (0==memcmp(entry._name, match, sizeof(match))) {
-      PS_LOG_DEBUG(F("Read entry at %d size: %d key: '%s' isFree: %d match: %d start: %d" CR), offset, size, entry._name, (int)entry.isFree(), memcmp(entry._name, match, sizeof(match)), start);
+      PS_LOG_DEBUG(F("Found named entry at %d size: %d key: '%s' isFree: %d match: %d start: %d" CR), offset, size, entry._name, (int)entry.isFree(), memcmp(entry._name, match, sizeof(match)), start);
     }
     if (offset>=start && !entry.isFree() && 0==memcmp(entry._name, match, sizeof(match))) {
       if (checkSize && size!=pSize) {
@@ -392,7 +392,8 @@ int ParameterStore::get(const char *key, uint8_t *buffer, const uint16_t size) c
   return PS_SUCCESS;
 }
 int ParameterStore::get(const char *key, char *str, uint16_t size) const {
-  return PS_SUCCESS;
+  PS_LOG_ERROR(F("Calling unimplemented ParameterStore::get with '%s' %d" CR), key, size);
+  return PS_ERROR_NOT_FOUND;
 }
 int ParameterStore::get(const char *key, uint32_t *value) const {
   uint32_t storeValue = 0;

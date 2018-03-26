@@ -169,6 +169,7 @@ class Datum {
   protected:
   char _name[8];
   Datum(const char *name) {
+    memset(_name, 0, sizeof(_name));
     strncpy(_name, name, sizeof(_name));
   }
 
@@ -216,7 +217,7 @@ class DatumBytes : public Datum {
     uint8_t buffer[_size];
     int ok = store.get(_name, buffer, _size);
     if (PS_SUCCESS!=ok) {
-      PS_LOG_DEBUG(F("Failed to read" CR));
+      PS_LOG_DEBUG(F("Failed to read bytes '%s' %d" CR), _name, _size);
       return false;
     }
     if (memcmp(_bytes, buffer, _size)!=0) {
@@ -264,7 +265,7 @@ class DatumInt : public Datum {
     uint32_t value = 0;
     int ok = store.get(_name, &value);
     if (PS_SUCCESS!=ok) {
-      PS_LOG_DEBUG(F("Failed to read" CR));
+      PS_LOG_DEBUG(F("Failed to read int '%s' %d" CR), _name, sizeof(value));
       return false;
     }
     if (_value!=value) {
