@@ -307,7 +307,9 @@ uint16_t ParameterStore::findKey(const uint16_t start, const char *key, const bo
     Entry entry;
     _store.read(offset, &entry, sizeof(entry));
     const uint16_t size = entry.getSize();
-    //PS_LOG_DEBUG(F("Read entry at %d size %d key '%s'" CR), offset, size, entry._name);
+    if (0==memcmp(entry._name, match, sizeof(match))) {
+      PS_LOG_DEBUG(F("Read entry at %d size: %d key: '%s' isFree: %d match: %d start: %d" CR), offset, size, entry._name, (int)entry.isFree(), memcmp(entry._name, match, sizeof(match)), start);
+    }
     if (offset>=start && !entry.isFree() && 0==memcmp(entry._name, match, sizeof(match))) {
       if (checkSize && size!=pSize) {
         offset = _size; // Indicate not found
