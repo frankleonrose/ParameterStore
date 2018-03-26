@@ -172,6 +172,7 @@ class Datum {
 
   public:
   virtual ~Datum() {}
+  const char *name() const { return _name; }
   virtual Datum *clone() const = 0;
   virtual Datum *randomize() = 0;
   virtual bool store(ParameterStore &store) const = 0;
@@ -245,7 +246,7 @@ class DatumInt : public Datum {
     return PS_SUCCESS==store.set(_name, _value);
   }
   virtual bool check(const ParameterStore &store) const {
-    // PS_LOG_DEBUG(F("Checking %s with size %d" CR), _name, _size);
+    // PS_LOG_DEBUG(F("Checking %s with size %d" CR), _name, sizeof(_value));
     uint32_t value = 0;
     int ok = store.get(_name, &value);
     if (PS_SUCCESS!=ok) {
@@ -364,15 +365,23 @@ void test_serialize_deserialize(void) {
     bool ok = d->store(paramStore);
     TEST_ASSERT_TRUE_MESSAGE(ok, "Stored new value successfully");
 
-    char buffer[1000];
+    char buffer[1500];
     int size = paramStore.serialize(buffer, 4);
     TEST_ASSERT_TRUE_MESSAGE(size==-1, "Buffer size of 4 should not be large enough");
     size = paramStore.serialize(buffer, sizeof(buffer));
     TEST_ASSERT_FALSE_MESSAGE(size==-1, "Buffer is large enough");
 
+    // PS_LOG_DEBUG(F("Serialized: %s" CR), buffer);
+
     paramStore.deserialize(buffer, size);
     for (di = 0; di<ELEMENTS(data); ++di) {
       TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
+      if (!data[di]->check(paramStore)) {
+        PS_LOG_DEBUG(F("Serialized: %s" CR), buffer);
+        PS_LOG_DEBUG(F("Failing name: %s" CR), data[di]->name());
+
+        TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
+      }
     }
   }
 }
