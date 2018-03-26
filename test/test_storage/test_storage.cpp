@@ -86,7 +86,7 @@ protected:
       // PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
       memcpy(_bytes + offset, buf, size);
     }
-    dumpBytes((uint8_t *)buf, size);
+    // dumpBytes((uint8_t *)buf, size);
     _byteWriteCount += size;
   }
 };
@@ -214,14 +214,15 @@ class DatumBytes : public Datum {
   virtual bool check(const ParameterStore &store) const {
     // PS_LOG_DEBUG(F("Checking %s with size %d" CR), _name, _size);
     uint8_t buffer[_size];
-    TEST_ASSERT_TRUE_MESSAGE(_size<=sizeof(buffer), "Buffer should be big enough for size");
     int ok = store.get(_name, buffer, _size);
     if (PS_SUCCESS!=ok) {
       PS_LOG_DEBUG(F("Failed to read" CR));
       return false;
     }
-    // dumpBytes(buffer, _size);
-    // dumpBytes(_bytes, _size);
+    if (memcmp(_bytes, buffer, _size)!=0) {
+      dumpBytes(buffer, _size);
+      dumpBytes(_bytes, _size);
+    }
     return memcmp(_bytes, buffer, _size)==0;
   }
   virtual void dump() const {
@@ -265,6 +266,9 @@ class DatumInt : public Datum {
     if (PS_SUCCESS!=ok) {
       PS_LOG_DEBUG(F("Failed to read" CR));
       return false;
+    }
+    if (_value!=value) {
+      PS_LOG_DEBUG(F("Different values: 0x%X 0x%X" CR), _value, value);
     }
     return _value==value;
   }
