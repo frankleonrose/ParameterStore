@@ -86,7 +86,7 @@ protected:
       // PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
       memcpy(_bytes + offset, buf, size);
     }
-    // dumpBytes((uint8_t *)buf, size);
+    dumpBytes((uint8_t *)buf, size);
     _byteWriteCount += size;
   }
 };
@@ -96,6 +96,7 @@ TestStore<STORE_SIZE> testStore;
 ParameterStore paramStore(testStore);
 
 void setUp(void) {
+  PS_LOG_DEBUG("Running setup \n");
   testStore.resetStore();
   bool begin = paramStore.begin();
   TEST_ASSERT_TRUE_MESSAGE(begin, "Must start successfully")
@@ -369,6 +370,10 @@ void test_multiple_writes_with_error(void) {
 }
 
 void test_serialize_deserialize(void) {
+  char buffer[1500];
+  int size = paramStore.serialize(buffer, sizeof(buffer));
+  PS_LOG_DEBUG(F("Starting store: %s" CR), buffer);
+
   Datum *data[20];
   makeTestEntries(paramStore, data, ELEMENTS(data));
 
@@ -377,7 +382,7 @@ void test_serialize_deserialize(void) {
     Datum *d = data[di];
     TEST_ASSERT_TRUE_MESSAGE(d->check(paramStore), "Check value stored last time");
     d->randomize();
-    d->dump();
+    // d->dump();
     bool ok = d->store(paramStore);
     TEST_ASSERT_TRUE_MESSAGE(ok, "Stored new value successfully");
 
@@ -417,12 +422,12 @@ extern "C"
 int main(int argc, char **argv) {
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    RUN_TEST(test_fetch_absent_value);
-    RUN_TEST(test_fetch_present_value);
-    RUN_TEST(test_fetch_two_values);
-    RUN_TEST(test_overwrite);
-    RUN_TEST(test_multiple_writes);
-    RUN_TEST(test_multiple_writes_with_error);
+    // RUN_TEST(test_fetch_absent_value);
+    // RUN_TEST(test_fetch_present_value);
+    // RUN_TEST(test_fetch_two_values);
+    // RUN_TEST(test_overwrite);
+    // RUN_TEST(test_multiple_writes);
+    // RUN_TEST(test_multiple_writes_with_error);
     RUN_TEST(test_serialize_deserialize);
 
     // setup();
