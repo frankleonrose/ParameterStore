@@ -46,7 +46,6 @@ public:
   }
 protected:
   virtual void readImpl(uint16_t offset, void *buf, uint16_t size) const {
-    // PS_LOG_DEBUG(F("readImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
     if (offset!=lastOffset) {
       count = 0;
       lastOffset = offset;
@@ -61,7 +60,8 @@ protected:
     TEST_ASSERT_TRUE_MESSAGE(offset<Size, "readImpl offset should be within Size");
     TEST_ASSERT_TRUE_MESSAGE((offset+size)<=Size, "readImpl offset+size should be within Size");
     memcpy(buf, _bytes + offset, size);
-    // dumpBytes((uint8_t *)buf, size);
+    PS_LOG_DEBUG(F("readImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+    dumpBytes((uint8_t *)buf, size);
   }
   virtual void writeImpl(uint16_t offset, const void *buf, uint16_t size) {
     // PS_LOG_DEBUG(F("Write count %d with fail at %d" CR), _byteWriteCount, _failAfter);
@@ -83,10 +83,10 @@ protected:
       }
     }
     else {
-      // PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+      PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+      dumpBytes((uint8_t *)buf, size);
       memcpy(_bytes + offset, buf, size);
     }
-    // dumpBytes((uint8_t *)buf, size);
     _byteWriteCount += size;
   }
 };
