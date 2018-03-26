@@ -46,6 +46,7 @@ public:
   }
 protected:
   virtual void readImpl(uint16_t offset, void *buf, uint16_t size) const {
+    // PS_LOG_DEBUG(F("readImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
     if (offset!=lastOffset) {
       count = 0;
       lastOffset = offset;
@@ -60,8 +61,7 @@ protected:
     TEST_ASSERT_TRUE_MESSAGE(offset<Size, "readImpl offset should be within Size");
     TEST_ASSERT_TRUE_MESSAGE((offset+size)<=Size, "readImpl offset+size should be within Size");
     memcpy(buf, _bytes + offset, size);
-    PS_LOG_DEBUG(F("readImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
-    dumpBytes((uint8_t *)buf, size);
+    // dumpBytes((uint8_t *)buf, size);
   }
   virtual void writeImpl(uint16_t offset, const void *buf, uint16_t size) {
     // PS_LOG_DEBUG(F("Write count %d with fail at %d" CR), _byteWriteCount, _failAfter);
@@ -72,19 +72,19 @@ protected:
         uint16_t goodWrite = MIN(size, _failAfter - _byteWriteCount);
         memcpy(_bytes + offset, buf, goodWrite); // Write up to the failure byte
         if (goodWrite<size) {
-          PS_LOG_DEBUG(F("Abbreviated write: %d of %d at offset %d" CR), goodWrite, size, offset-sizeof(uint32_t));
+          // PS_LOG_DEBUG(F("Abbreviated write: %d of %d at offset %d" CR), goodWrite, size, offset-sizeof(uint32_t));
         }
         else {
-          PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+          // PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
         }
       }
       else {
-        PS_LOG_DEBUG(F("Skipped writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+        // PS_LOG_DEBUG(F("Skipped writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
       }
     }
     else {
-      PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
-      dumpBytes((uint8_t *)buf, size);
+      // PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+      // dumpBytes((uint8_t *)buf, size);
       memcpy(_bytes + offset, buf, size);
     }
     _byteWriteCount += size;
@@ -96,7 +96,6 @@ TestStore<STORE_SIZE> testStore;
 ParameterStore paramStore(testStore);
 
 void setUp(void) {
-  PS_LOG_DEBUG("Running setup \n");
   testStore.resetStore();
   bool begin = paramStore.begin();
   TEST_ASSERT_TRUE_MESSAGE(begin, "Must start successfully")
@@ -220,21 +219,16 @@ class DatumBytes : public Datum {
       PS_LOG_DEBUG(F("Failed to read bytes '%s' %d" CR), _name, _size);
       return false;
     }
-    if (memcmp(_bytes, buffer, _size)!=0) {
-      dumpBytes(buffer, _size);
-      dumpBytes(_bytes, _size);
-    }
+    // if (memcmp(_bytes, buffer, _size)!=0) {
+    //   PS_LOG_DEBUG(F("Bytes different for %s [%d]" CR), _name, _size);
+    //   dumpBytes(buffer, _size);
+    //   dumpBytes(_bytes, _size);
+    // }
     return memcmp(_bytes, buffer, _size)==0;
   }
   virtual void dump() const {
-    char bytes[2 * _size + 1];
-    char *w = bytes;
-    for (size_t i=0; i<_size; ++i) {
-      *(w++) = hexDigit(_bytes[i] >> 4);
-      *(w++) = hexDigit(_bytes[i]);
-    }
-    bytes[2*_size] = '\0';
-    PS_LOG_DEBUG(F("Name: '%s' Value: '%s'" CR), _name, bytes);
+    PS_LOG_DEBUG(F("Name: '%s' Value:"), _name);
+    dumpBytes(_bytes, _size);
   }
 };
 
@@ -265,12 +259,12 @@ class DatumInt : public Datum {
     uint32_t value = 0;
     int ok = store.get(_name, &value);
     if (PS_SUCCESS!=ok) {
-      PS_LOG_DEBUG(F("Failed to read int '%s' %d" CR), _name, sizeof(value));
+      PS_LOG_DEBUG(F("Failed to read int '%s' %d" CR), _name, (int)sizeof(value));
       return false;
     }
-    if (_value!=value) {
-      PS_LOG_DEBUG(F("Different values: 0x%X 0x%X" CR), _value, value);
-    }
+    // if (_value!=value) {
+    //   PS_LOG_DEBUG(F("Different values: 0x%X 0x%X" CR), _value, value);
+    // }
     return _value==value;
   }
   virtual void dump() const {
@@ -322,7 +316,7 @@ void test_multiple_writes_with_error(void) {
   Datum *data[20];
   makeTestEntries(paramStore, data, ELEMENTS(data));
 
-  PS_LOG_DEBUG(F("Starting test cycles" CR));
+  // PS_LOG_DEBUG(F("Starting test cycles" CR));
   for (int i=0; i<CYCLES; ++i) {
     int di = rand() % ELEMENTS(data);
     Datum *d = data[di];
@@ -375,10 +369,6 @@ void test_multiple_writes_with_error(void) {
 }
 
 void test_serialize_deserialize(void) {
-  char buffer[1500];
-  int size = paramStore.serialize(buffer, sizeof(buffer));
-  PS_LOG_DEBUG(F("Starting store: %s" CR), buffer);
-
   Datum *data[20];
   makeTestEntries(paramStore, data, ELEMENTS(data));
 
@@ -401,11 +391,10 @@ void test_serialize_deserialize(void) {
 
     paramStore.deserialize(buffer, size);
     for (di = 0; di<ELEMENTS(data); ++di) {
-      // TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
       if (!data[di]->check(paramStore)) {
+        // Show more before failing
         PS_LOG_DEBUG(F("Serialized: %s" CR), buffer);
         data[di]->dump();
-
         TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
       }
     }
@@ -427,12 +416,12 @@ extern "C"
 int main(int argc, char **argv) {
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    // RUN_TEST(test_fetch_absent_value);
-    // RUN_TEST(test_fetch_present_value);
-    // RUN_TEST(test_fetch_two_values);
-    // RUN_TEST(test_overwrite);
-    // RUN_TEST(test_multiple_writes);
-    // RUN_TEST(test_multiple_writes_with_error);
+    RUN_TEST(test_fetch_absent_value);
+    RUN_TEST(test_fetch_present_value);
+    RUN_TEST(test_fetch_two_values);
+    RUN_TEST(test_overwrite);
+    RUN_TEST(test_multiple_writes);
+    RUN_TEST(test_multiple_writes_with_error);
     RUN_TEST(test_serialize_deserialize);
 
     // setup();
