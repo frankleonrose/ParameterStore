@@ -177,6 +177,7 @@ class Datum {
   virtual Datum *randomize() = 0;
   virtual bool store(ParameterStore &store) const = 0;
   virtual bool check(const ParameterStore &store) const = 0;
+  virtual void dump() const = 0;
 };
 
 class DatumBytes : public Datum {
@@ -221,6 +222,9 @@ class DatumBytes : public Datum {
     // dumpBytes(_bytes, _size);
     return memcmp(_bytes, buffer, _size)==0;
   }
+  virtual void dump() const {
+    PS_LOG_DEBUG(F("Name: %s Value: %*m" CR), _name, _size, _bytes);
+  }
 };
 
 class DatumInt : public Datum {
@@ -254,6 +258,9 @@ class DatumInt : public Datum {
       return false;
     }
     return _value==value;
+  }
+  virtual void dump() const {
+    PS_LOG_DEBUG(F("Name: %s Value: %x" CR), _name, _value);
   }
 };
 
@@ -378,7 +385,7 @@ void test_serialize_deserialize(void) {
       // TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
       if (!data[di]->check(paramStore)) {
         PS_LOG_DEBUG(F("Serialized: %s" CR), buffer);
-        PS_LOG_DEBUG(F("Failing name: %s" CR), data[di]->name());
+        data[di]->dump();
 
         TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
       }
