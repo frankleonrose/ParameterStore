@@ -72,14 +72,14 @@ protected:
         uint16_t goodWrite = MIN(size, _failAfter - _byteWriteCount);
         memcpy(_bytes + offset, buf, goodWrite); // Write up to the failure byte
         if (goodWrite<size) {
-          // PS_LOG_DEBUG(F("Abbreviated write: %d of %d at offset %d" CR), goodWrite, size, offset-sizeof(uint32_t));
+          PS_LOG_DEBUG(F("Abbreviated write: %d of %d at offset %d" CR), goodWrite, size, offset-sizeof(uint32_t));
         }
         else {
-          // PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+          PS_LOG_DEBUG(F("writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
         }
       }
       else {
-        // PS_LOG_DEBUG(F("Skipped writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
+        PS_LOG_DEBUG(F("Skipped writeImpl offset %d size %d" CR), offset-sizeof(uint32_t), size);
       }
     }
     else {
