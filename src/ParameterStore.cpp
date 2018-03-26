@@ -50,6 +50,31 @@ uint32_t calcCrc(const uint32_t seed, const uint8_t *buffer, const uint16_t size
   return crc;
 }
 
+char hexDigit(uint8_t b) {
+  b = b & 0x0F;
+  if (b<10) {
+    return '0' + b;
+  }
+  else {
+    return 'A' + b - 10;
+  }
+}
+
+uint8_t nibble(const char h) {
+  if ('0' <= h && h <= '9') {
+    return h - '0';
+  }
+  else if ('A' <= h && h <= 'F') {
+    return h - 'A' + 10;
+  }
+  else if ('a' <= h && h <= 'f') {
+    return h - 'a' + 10;
+  }
+  else {
+    return 0;
+  }
+}
+
 struct __attribute__ ((packed)) PlanTag {
   uint8_t flag;
   uint8_t unused;
@@ -114,7 +139,9 @@ typedef struct EntryTag {
   EntryTag(uint16_t size, const char *key) {
     _size = htons(size);
     _status._transaction = htons(0);
-    strncpy(_name, key, sizeof(_name)); // Pads with 0's to width
+    // _status._flag = FlagSet;
+    memset(_name, 0, sizeof(_name)); // Pads with 0's to width
+    strncpy(_name, key, sizeof(_name));
   }
   uint16_t getSize() const {
     return ntohs(_size);
@@ -371,4 +398,99 @@ int ParameterStore::get(const char *key, uint32_t *value) const {
     *value = ntohl(storeValue);
   }
   return ret;
+}
+
+int ParameterStore::serialize(char *buffer, const size_t size) const {
+  // Walk through all entries\...
+  Entry entry;
+  size_t fill = 0;
+  for (uint16_t offset = sizeof(Header); offset<_size; offset += entry.totalBytes()) {
+    _store.read(offset, &entry, sizeof(entry));
+    //PS_LOG_DEBUG(F("Read entry at %d size %d key '%s'" CR), offset, size, entry._name);
+    if (!entry.isFree()) {
+      // Write entry key=value where key is ASCII and value is a string of hex digits.
+      for (char *nm = entry._name; *nm!='\0'; ++nm) {
+        buffer[fill++] = *nm;
+        if (fill==size) {
+          return -1;
+        }
+      }
+
+      buffer[fill++] = '=';
+      if (fill==size) {
+        return -1;
+      }
+
+      const uint16_t esize = entry.getSize();
+      uint8_t value[esize];
+      _store.read(offset + sizeof(Entry), value, esize);
+      for (size_t i=0; i<esize; ++i) {
+        uint8_t b = value[i];
+        buffer[fill++] = hexDigit(b >> 4);
+        if (fill==size) {
+          return -1;
+        }
+        buffer[fill++] = hexDigit(b);
+        if (fill==size) {
+          return -1;
+        }
+      }
+
+      // Newline terminate
+      buffer[fill++] = '\n';
+      if (fill==size) {
+        return -1;
+      }
+    }
+  }
+  buffer[fill++] = '\0';
+  if (fill==size) {
+    return -1;
+  }
+  return fill;
+}
+
+bool ParameterStore::deserializeLine(const char *buffer, const char *eol) {
+  // PS_LOG_DEBUG(F("deserializeLine '%p' '%p'" CR), buffer, eol);
+
+  const char *eq = strstr(buffer, "=");
+  if (eq==NULL || (eq-buffer)>8 || eq>=eol) {
+    return false;
+  }
+  char key[8+1];
+  strncpy(key, buffer, (eq-buffer));
+  key[eq-buffer+1] = '\0';
+
+  buffer = eq + 1;
+  size_t digits = (eol - buffer);
+  if ((digits % 2)!=0) {
+    // Can't handle odd number of hex digits
+    return false;
+  }
+  uint8_t value[digits / 2];
+  size_t d = 0;
+  while (buffer!=eol) {
+    uint8_t b = 0xF0 & (nibble(*(buffer++)) << 4);
+    b += 0x0F & nibble(*(buffer++));
+    value[d++] = b;
+  }
+  PS_ASSERT((2*d)==digits);
+  set(key, value, digits / 2);
+  return true;
+}
+
+bool ParameterStore::deserialize(const char *buffer, const size_t size) {
+  // Clear store...
+  Header header;
+  _store.writeu16(OFFSET(header, size), _size);
+  Entry::writeFree(_store, sizeof(Header), _size - sizeof(Header));
+  // Write format last...if it succeeds, we have valid header
+  _store.writeu16(OFFSET(header, format), FORMAT);
+
+  bool ok = true;
+  for (const char *eol = strstr(buffer, "\n"); eol!=NULL; buffer = eol + 1, eol = strstr(buffer, "\n")) {
+    ok = ok && deserializeLine(buffer, eol);
+  }
+  ok = ok && deserializeLine(buffer, buffer + strlen(buffer) + 1); // Handle possible last line with no terminator.
+  return ok;
 }

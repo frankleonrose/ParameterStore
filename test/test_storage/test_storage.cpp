@@ -198,7 +198,7 @@ class DatumBytes : public Datum {
   }
   static DatumBytes *make(const char *name) {
     uint8_t bytes[200];
-    const uint16_t size = 1 + rand() % 4;
+    const uint16_t size = 1 + rand() % 16;
     DatumBytes *d = new DatumBytes(name, bytes, size);
     d->randomize();
     return d;
@@ -352,6 +352,32 @@ void test_multiple_writes_with_error(void) {
   }
 }
 
+void test_serialize_deserialize(void) {
+  Datum *data[20];
+  makeTestEntries(paramStore, data, ELEMENTS(data));
+
+  for (int i=0; i<CYCLES; ++i) {
+    int di = rand() % ELEMENTS(data);
+    Datum *d = data[di];
+    TEST_ASSERT_TRUE_MESSAGE(d->check(paramStore), "Check value stored last time");
+    d->randomize();
+    bool ok = d->store(paramStore);
+    TEST_ASSERT_TRUE_MESSAGE(ok, "Stored new value successfully");
+
+    char buffer[1000];
+    int size = paramStore.serialize(buffer, 4);
+    TEST_ASSERT_TRUE_MESSAGE(size==-1, "Buffer size of 4 should not be large enough");
+    size = paramStore.serialize(buffer, sizeof(buffer));
+    TEST_ASSERT_FALSE_MESSAGE(size==-1, "Buffer is large enough");
+
+    paramStore.deserialize(buffer, size);
+    for (di = 0; di<ELEMENTS(data); ++di) {
+      TEST_ASSERT_TRUE_MESSAGE(data[di]->check(paramStore), "Read value after deserialize");
+    }
+  }
+}
+
+
 // void test_led_state_high(void) {
 //     digitalWrite(LED_BUILTIN, HIGH);
 //     TEST_ASSERT_EQUAL(digitalRead(LED_BUILTIN), HIGH);
@@ -372,6 +398,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_overwrite);
     RUN_TEST(test_multiple_writes);
     RUN_TEST(test_multiple_writes_with_error);
+    RUN_TEST(test_serialize_deserialize);
 
     // setup();
 

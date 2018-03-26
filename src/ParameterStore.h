@@ -55,6 +55,7 @@ class ParameterStore {
 public:
   ParameterStore(NonVolatileStore &store);
   bool begin();
+
   int set(const char *key, const uint8_t *buffer, const uint16_t size);
   int set(const char *key, const char *str);
   int set(const char *key, const uint32_t value);
@@ -62,10 +63,14 @@ public:
   int get(const char *key, uint8_t *buffer, const uint16_t size) const;
   int get(const char *key, char *str, uint16_t size) const;
   int get(const char *key, uint32_t *value) const;
+
+  int serialize(char *buffer, const size_t size) const;
+  bool deserialize(const char *buffer, const size_t size);
 private:
   bool recoverPlan(const struct HeaderTag &header);
   uint16_t findFreeSpace(uint16_t unitSize, uint16_t *foundSize) const;
   uint16_t findKey(const uint16_t start, const char *key, const bool checkSize, const uint16_t size) const;
+  bool deserializeLine(const char *buffer, const char *eol);
 };
 
 #endif
