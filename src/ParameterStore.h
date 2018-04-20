@@ -73,4 +73,6 @@ private:
   bool deserializeLine(const char *buffer, const char *eol);
 };
 
+// Utility function - buffer must be 2*count+1 size.
+size_t formatHexBytes(char *buffer, uint8_t *bytes, size_t count);
 #endif
