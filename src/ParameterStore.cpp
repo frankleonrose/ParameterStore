@@ -60,6 +60,15 @@ char hexDigit(uint8_t b) {
   }
 }
 
+size_t formatHexBytes(char *buffer, uint8_t *bytes, size_t count) {
+  for (size_t i=0; i<count; ++i) {
+    uint8_t b = bytes[i];
+    *(buffer++) = hexDigit(b >> 4);
+    *(buffer++) = hexDigit(b);
+  }
+  return 2 * count;
+}
+
 uint8_t nibble(const char h) {
   if ('0' <= h && h <= '9') {
     return h - '0';
@@ -427,17 +436,10 @@ int ParameterStore::serialize(char *buffer, const size_t size) const {
       const uint16_t esize = entry.getSize();
       uint8_t value[esize];
       _store.read(offset + sizeof(Entry), value, esize);
-      for (size_t i=0; i<esize; ++i) {
-        uint8_t b = value[i];
-        buffer[fill++] = hexDigit(b >> 4);
-        if (fill==size) {
-          return -1;
-        }
-        buffer[fill++] = hexDigit(b);
-        if (fill==size) {
-          return -1;
-        }
+      if (size<(fill+2*esize)) {
+        return -1;
       }
+      fill += formatHexBytes(&buffer[fill], value, esize);
 
       // Newline terminate
       buffer[fill++] = '\n';

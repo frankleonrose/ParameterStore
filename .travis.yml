@@ -34,12 +34,12 @@ cache:
         - "~/.platformio"
 
 env:
-    - PLATFORMIO_CI_SRC=test/test_storage/test_storage.cpp
-    - PLATFORMIO_CI_SRC=examples/file.ino
-    - PLATFORMIO_CI_SRC=./ParameterStore.cpp
+    # - PLATFORMIO_CI_SRC=test/test_storage/test_storage.cpp
+    # - PLATFORMIO_CI_SRC=examples/file.ino
+    # - PLATFORMIO_CI_SRC=./ParameterStore.cpp
 
 install:
-    - pip install -U https://github.com/platformio/platformio-core/archive/develop.zip
+    - pip install -U platformio
 
 script:
     - echo "Run desktop (native) tests on Travis.CI Linux machine"
