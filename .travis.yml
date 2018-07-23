@@ -43,8 +43,8 @@ install:
 
 script:
 
-    - @pio --version
-    - @echo "Run desktop (native) tests on Travis.CI Linux machine"
+    - pio --version
+    - echo "Run desktop (native) tests on Travis.CI Linux machine"
     - platformio test -e native
 
     # - echo "List remote devices"
