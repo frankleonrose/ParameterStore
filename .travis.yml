@@ -39,7 +39,7 @@ env:
     # - PLATFORMIO_CI_SRC=./ParameterStore.cpp
 
 install:
-    - pip install -U platformio
+    - pip install -U https://github.com/platformio/platformio-core/archive/develop.zip
 
 script:
     - echo "Run desktop (native) tests on Travis.CI Linux machine"
